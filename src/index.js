@@ -1,32 +1,21 @@
 import './css/styles.css';
 import debounce from 'lodash.debounce';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import fetchCountries from './fetchCountries.js';
+import { fetchCountries } from './fetchCountries';
+
 
 const DEBOUNCE_DELAY = 300;
-/*1)HTTP-запросы
 
-Используй публичный API Rest Countries, а именно ресурс name,
-возвращающий массив объектов
-стран удовлетворивших критерий поиска. Добавь минимальное оформление
-элементов интерфейса.
+const searchBox = document.querySelector('#search-box');
+const coutryList = document.querySelector('.country-list');
+const coutryInfo= document.querySelector('.country-info');
 
-Напиши функцию fetchCountries(name) которая делает HTTP-запрос на ресурс
-name и возвращает
- промис с массивом стран - результатом запроса. Вынеси её в отдельный
- файл fetchCountries.js и сделай именованный экспорт.*/
-
- const searchBox = document.querySelector('#search-box');
- const coutryList = document.querySelector('.country-list');
- const coutryInfo= document.querySelector('.country-info');
-
- searchBox.addEventListener('input',debounce(onSearch,DEBOUNCE_DELAY));
+searchBox.addEventListener('input',debounce(onSearch,DEBOUNCE_DELAY));
 
 const clearList = el=>(el.innerHTML = '');
 
-
-function onSearch(e) {
-const name = e.target.value.trim();
+function onSearch (evt) {
+const name = evt.target.value.trim();
   if (!name) {
    clearList(coutryList);
    clearList(coutryInfo);
@@ -34,35 +23,50 @@ const name = e.target.value.trim();
   }
 
   fetchCountries(name)
-  .then(el => {
-    console.log(data);
-    if (el.length > 10) {
-      Notify.info('Too many matches found. Please enter a more specific name');
-      return;
-    }
-    renderMarkup(el);
-  })
-  .catch(err => {
-    clearList(coutryList);
-   clearList(coutryInfo);
-    Notify.failure('Oops, there is no country with that name');
-  });
+  .then(data => {
+   console.log(data);
+   if (data.length > 10) {
+   Notify.info('Too many matches found. Please enter a more specific name');
+    return;
+       }
+       renderMarkup(data);
+     })
+     .catch(err => {
+        clearList(coutryList);
+        clearList(coutryInfo);
+        Notify.failure('Oops, there is no country with that name');
+       });
 
 };
 
-// function fetchCountries() {
-//   // loadMoreBtn.disable();
-//   countriesApiService.fetchArticles().then(countries => {
-//     // appendCountriesMarkup(countries);
-//     // loadMoreBtn.enable();
-//     console.log(countries);
-//   });
-// }
+const renderMarkup = data => {
+  if (data.length === 1) {
+    clearList(coutryList);
+    const markupInfo = createInfoMarkup(data);
+    coutryInfo.innerHTML = markupInfo;
+  } else {
+    clearList(coutryInfo);
+    const markupList = createListMarkup(data);
+    coutryList.innerHTML = markupList;
+  }
+};
 
-// function appendCountriesMarkup(articles) {
-//   refs.articlesContainer.insertAdjacentHTML('beforeend', articlesTpl(articles));
-// }
+const createListMarkup = data => {
+  return data.map(
+      ({ name, flags }) =>
+        `<li class = "item" ><img src="${flags.svg}" alt="${name.official}" width="40" height="40">${name.official}</li>`,
+    )
+    .join('');
+};
 
-// function clearCountriesContainer() {
-//   refs.articlesContainer.innerHTML = '';
-// }
+const createInfoMarkup = data => {
+  return data.map(
+    ({ name, capital, population, flags, languages }) =>
+      `<h1><img src="${flags.svg}" alt="${name.official}" width="40" height="40">${
+        name.official
+      }</h1>
+      <p>Capital: ${capital}</p>
+      <p>Population: ${population}</p>
+      <p>Languages: ${Object.values(languages)}</p>`,
+  );
+};
